@@ -141,3 +141,24 @@ def fcp(predictions, verbose=True):
         print('FCP:  {0:1.4f}'.format(fcp))
 
     return fcp
+
+    
+def total_score(ranked_predictions,list_n=(1,3,5,10,20,30,40,50),verbose=True):
+    """Total score gathered in the test set when recommending (1,3,5,10,20,30,40,50) items
+    Needs  alist of ranked_predictions in input"""
+    
+    import numpy as np
+    array_n=np.array(list_n,dtype=int)
+    score=np.zeros((len(list_n),3))
+        
+    if (verbose): print(len(ranked_predictions))
+    for i,n in enumerate(array_n):
+        for p in ranked_predictions:
+            if (p.rank<=n and p.rank>0):           #adds to the score only if item is estimated to be in the first n positions (-1 is no rank)
+                score[i,0]+=p.r_ui                 #total score
+                score[i,1]+=1                      #total number of scored items
+        score[i,2]=score[i,0]/score[i,1]           #average score
+        if verbose: print(n,score[i,0],score[i,1],score[i,2])
+        
+    return score
+  

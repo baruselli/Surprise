@@ -18,9 +18,33 @@ from joblib import delayed
 from . import accuracy
 from .dump import dump
 
+def get_top_n(predictions):
+    '''Return the top-N recommendation for each user from a set of predictions.
+
+    Args:
+        predictions(list of Prediction objects): The list of predictions, as
+            returned by the test method of an algorithm.
+
+
+    Returns:
+    A dict where keys are user (raw) ids and values are lists of tuples:
+        [(raw item id, rating estimation), ...] of size n.
+    '''
+    #print(len(predictions))
+    # First map the predictions to each user.
+    top_n = defaultdict(list)
+    for uid, iid, true_r, est, _ in predictions:
+        top_n[uid].append((iid, est,true_r))
+
+    # Then sort the predictions for each user
+    for uid, user_ratings in top_n.items():
+        user_ratings.sort(key=lambda x: x[1], reverse=True)
+        top_n[uid] = user_ratings
+
+    return top_n
 
 def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
-             dump_dir=None, verbose=1):
+             dump_dir=None, verbose=1,full_test_set=False):
     """Evaluate the performance of the algorithm on given data.
 
     Depending on the nature of the ``data`` parameter, it may or may not
@@ -49,7 +73,6 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
         A dictionary containing measures as keys and lists as values. Each list
         contains one entry per fold.
     """
-
     performances = CaseInsensitiveDefaultDict(list)
 
     if verbose:
@@ -57,6 +80,8 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
               ', '.join((m.upper() for m in measures)),
               algo.__class__.__name__))
         print()
+        
+
 
     for fold_i, (trainset, testset) in enumerate(data.folds()):
 
@@ -64,14 +89,57 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
             print('-' * 12)
             print('Fold ' + str(fold_i + 1))
 
+            
+
         # train and test algorithm. Keep all rating predictions in a list
         algo.train(trainset)
         predictions = algo.test(testset, verbose=(verbose == 2))
+        print("number of predictions: ",len(predictions))
+        
+        #predictions for all missing pairs uid-iid, not only the ones in test_set (needed for global ranking of items in testset)
+        if(full_test_set):
+            if (verbose): print("building full test set")
+            testset_full = trainset.build_anti_testset()            #full test set (everything minus trainset)
+            predictions_full = algo.test(testset_full)              #predictions for full test set
+            top_n = get_top_n(predictions_full)                     #... ordered by rating
+            top_n_only_item = defaultdict(list)                     
+            for uid, user_ratings in top_n.items():
+                top_n_only_item[uid]=[iid for (iid,_,_) in user_ratings]  # ...and keeping iid only
+            if (verbose):  print("number of predictions full: ",len(predictions_full))
+            #print(predictions_full[:10])
+            #print(predictions[:10])
+            #print(top_n["1"])
+            #if (verbose): print(top_n_only_item["1"])
+        else:                                                 # this gives the ranking only within the test set
+            top_n = get_top_n(predictions)                    
+            top_n_only_item = defaultdict(list)                    
+            for uid, user_ratings in top_n.items():
+                top_n_only_item[uid]=[iid for (iid,_,_) in user_ratings]
+            if (verbose):  print("number of predictions full: ",len(predictions_full))   
+            
+        #now i create a list, equal to predictions, where however each object is a ranked_prediction, i.e. it also has a ranking
+        ranked_predictions=list()
+        for p in predictions:
+            try:
+                rank=top_n_only_item[p.uid].index(p.iid)+1         #finds the rank of the item of the test_set in the top list (starting from  1)
+            except:
+                rank=-1                       # if it does not find it: it shoud not happen but sometimes it does (maybe when in trainset?)
+            ranked_predictions.append(Ranked_Prediction(p.uid, p.iid, p.r_ui, p.est, p.details,rank))
+        #print(ranked_predictions[:10])
+            
+            
+        
+        #print(predictions_full["1"])
 
         # compute needed performance statistics
         for measure in measures:
             f = getattr(accuracy, measure.lower())
-            performances[measure].append(f(predictions, verbose=verbose))
+            # total score wants (only, btw) the ranks of the predictions, so I pass the ranked_predictions list
+            if(measure=="total_score"):
+                performances[measure].append(f(ranked_predictions, verbose=verbose))
+            # other wise I pass predictions as usual
+            else:
+                performances[measure].append(f(predictions, verbose=verbose))
 
         if with_dump:
 
@@ -310,3 +378,30 @@ def seed_and_eval(seed, *args):
 
     random.seed(seed)
     return evaluate(*args, verbose=0)
+
+    
+    
+# I should import this from predictions but I dont know how 
+from collections import namedtuple
+class Ranked_Prediction(namedtuple('Ranked_Prediction',
+                            ['uid', 'iid', 'r_ui', 'est', 'details','rank'])):
+    """
+    Extends Prediction by adding ranks:
+        rank_test(int): how the prediction ranks in the test set
+        rank_total(int): how the prediction ranks globally (everything minus training)
+    """
+    __slots__ = ()  # for memory saving purpose.
+
+    def __str__(self):
+        s = 'user: {uid:<10} '.format(uid=self.uid)
+        s += 'item: {iid:<10} '.format(iid=self.iid)
+        if self.r_ui is not None:
+            s += 'r_ui = {r_ui:1.2f}   '.format(r_ui=self.r_ui)
+        else:
+            s += 'r_ui = None   '
+        s += 'est = {est:1.2f}   '.format(est=self.est)
+        s += str(self.details)
+        s += 'rank= {rank:<10} : '.format(rank=self.rank)
+
+
+        return s

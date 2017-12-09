@@ -15,6 +15,7 @@ from .prediction_algorithms import CoClustering
 
 from .prediction_algorithms import PredictionImpossible
 from .prediction_algorithms import Prediction
+from .prediction_algorithms.predictions import Ranked_Prediction
 
 from .dataset import Dataset
 from .dataset import Reader

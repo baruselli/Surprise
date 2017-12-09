@@ -10,6 +10,7 @@ from __future__ import (absolute_import, division, print_function,
 from .. import similarities as sims
 from .predictions import PredictionImpossible
 from .predictions import Prediction
+from .predictions import Ranked_Prediction
 from .optimize_baselines import baseline_als
 from .optimize_baselines import baseline_sgd
 

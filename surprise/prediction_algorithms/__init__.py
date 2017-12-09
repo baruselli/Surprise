@@ -35,6 +35,7 @@ from .co_clustering import CoClustering
 
 from .predictions import PredictionImpossible
 from .predictions import Prediction
+from .predictions import Ranked_Prediction
 
 __all__ = ['AlgoBase', 'NormalPredictor', 'BaselineOnly', 'KNNBasic',
            'KNNBaseline', 'KNNWithMeans', 'SVD', 'SVDpp', 'NMF', 'SlopeOne',
