@@ -94,7 +94,9 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
         # train and test algorithm. Keep all rating predictions in a list
         algo.train(trainset)
         predictions = algo.test(testset, verbose=(verbose == 2))
-        print("number of predictions: ",len(predictions))
+        #predictions for the train set
+        trainset_set=trainset.all_ratings()
+        predictions_train()= algo.test(trainset_set, verbose=(verbose == 2))
         
         #predictions for all missing pairs uid-iid, not only the ones in test_set (needed for global ranking of items in testset)
         if(full_test_set):
@@ -110,12 +112,13 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
             #print(predictions[:10])
             #print(top_n["1"])
             #if (verbose): print(top_n_only_item["1"])
-        else:                                                 # this gives the ranking only within the test set
+         # this gives the ranking only within the test set
+         else:                                                
             top_n = get_top_n(predictions)                    
             top_n_only_item = defaultdict(list)                    
             for uid, user_ratings in top_n.items():
                 top_n_only_item[uid]=[iid for (iid,_,_) in user_ratings]
-            if (verbose):  print("number of predictions full: ",len(predictions_full))   
+            if (verbose):  print("number of predictions full: ",len(predictions))   
             
         #now i create a list, equal to predictions, where however each object is a ranked_prediction, i.e. it also has a ranking
         ranked_predictions=list()

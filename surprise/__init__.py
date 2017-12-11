@@ -21,6 +21,7 @@ from .dataset import Dataset
 from .dataset import Reader
 from .dataset import Trainset
 from .evaluate import evaluate
+from .evaluate import get_top_n
 from .evaluate import print_perf
 from .evaluate import GridSearch
 from . import dump

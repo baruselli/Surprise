@@ -145,7 +145,7 @@ def fcp(predictions, verbose=True):
     
 def total_score(ranked_predictions,list_n=(1,3,5,10,20,30,40,50),verbose=True):
     """Total score gathered in the test set when recommending (1,3,5,10,20,30,40,50) items
-    Needs  alist of ranked_predictions in input"""
+    Needs  a list of ranked_predictions in input"""
     
     import numpy as np
     array_n=np.array(list_n,dtype=int)
