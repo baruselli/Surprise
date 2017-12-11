@@ -96,7 +96,7 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
         predictions = algo.test(testset, verbose=(verbose == 2))
         #predictions for the train set
         trainset_set=trainset.all_ratings()
-        predictions_train= algo.test(trainset_set, verbose=(verbose == 2))
+        #predictions_train= algo.test(trainset_set, verbose=(verbose == 2))
         
         #predictions for all missing pairs uid-iid, not only the ones in test_set (needed for global ranking of items in testset)
         if(full_test_set):

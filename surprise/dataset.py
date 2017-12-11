@@ -690,6 +690,7 @@ class Trainset:
             A list of tuples ``(uid, iid, fill)`` where ids are raw ids.
         """
         fill = self.global_mean if fill is None else float(fill)
+        fill=np.nan
 
         anti_testset = []
         for u in self.all_users():
